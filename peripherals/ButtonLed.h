@@ -13,6 +13,7 @@ class ButtonLed
         virtual ~ButtonLed() = default;
 
         void Refresh();
+        bool IsActivated() const;
 
     protected:
         size_t pinButton;

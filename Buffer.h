@@ -3,7 +3,7 @@
 
 #include <array>
 
-#define BUFFER_SIZE 8
+#define BUFFER_SIZE 4
 
 class Buffer
 {

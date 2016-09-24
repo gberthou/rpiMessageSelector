@@ -29,3 +29,8 @@ void ButtonLed::Refresh()
     GPIO::Write(pinLed, toggle.IsActivated() ? 1 : 0);
 }
 
+bool ButtonLed::IsActivated() const
+{
+    return toggle.IsActivated();
+}
+
