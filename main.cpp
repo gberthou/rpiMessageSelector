@@ -23,7 +23,8 @@ static void displayImage(const char *filename, pid_t *child)
     *child = fork();
     if(*child == 0)
     {
-        execl("/usr/bin/fbi", "/usr/bin/fbi", "-noverbose", filename, NULL);
+        const char *argv[] = {"/usr/bin/fbi", "-noverbose", filename, NULL};
+        execv(argv[0], const_cast<char**>(argv));
         exit(EXIT_FAILURE);
     }
 }
