@@ -6,12 +6,19 @@
 #include <wait.h>
 #include <signal.h>
 #include <vector>
+#include <cstring>
 
 #include "MessageSelector.h"
 #include "Buffer.h"
 #include "gpio.h"
 
 #include "peripherals/ButtonLed.h"
+
+inline bool fileExists(const char *filename)
+{
+    std::ifstream file(filename);
+    return file.good();
+}
 
 static void displayImage(const char *filename, pid_t *child)
 {
@@ -25,6 +32,54 @@ static void displayImage(const char *filename, pid_t *child)
     {
         const char *argv[] = {"/usr/bin/fbi", "-noverbose", filename, NULL};
         execv(argv[0], const_cast<char**>(argv));
+        exit(EXIT_FAILURE);
+    }
+}
+
+static void getAnimationFrames(const char *dirname,
+                               std::vector<std::string> &frames)
+{
+    size_t i = 0;
+    for(;;)
+    {
+        std::ostringstream oss;
+        oss << dirname << i << ".png";
+        if(!fileExists(oss.str().c_str()))
+            break;
+        frames.push_back(oss.str());
+        ++i;
+    }
+}
+
+static void displayAnimation(const char *dirname, pid_t *child)
+{
+    if(*child > 0)
+    {
+        if(kill(*child, SIGTERM) == 0)
+            waitpid(*child, NULL, WEXITED);
+    }
+    *child = fork();
+    if(*child == 0)
+    {
+        std::vector<const char*> argv{"/usr/bin/fbi", "-noverbose", "-t", "1"};
+        std::vector<std::string> frames;
+        getAnimationFrames(dirname, frames);
+
+        std::vector<char *> tmp;
+        tmp.reserve(frames.size());
+        for(std::string name : frames)
+        {
+            char *s = new char[name.size()+1];
+            strcpy(s, name.c_str());
+            tmp.push_back(s);
+            argv.push_back(s);
+        }
+        argv.push_back(NULL);
+        for(auto i : argv) std::cout << i << std::endl;
+
+        execv(argv[0], const_cast<char**>(argv.data()));
+        for(char *s : tmp)
+            delete [] s;
         exit(EXIT_FAILURE);
     }
 }
@@ -64,8 +119,8 @@ int main(void)
                 if(newMessage != Buffer::INVALID)
                 {
                     std::ostringstream oss;
-                    oss << "/mnt/" << newMessage << "/0.png";
-                    displayImage(oss.str().c_str(), &child);
+                    oss << "/mnt/" << newMessage << "/";
+                    displayAnimation(oss.str().c_str(), &child);
                 }
             }
             lastButtonState = true;
